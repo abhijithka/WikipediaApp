@@ -6,13 +6,15 @@ import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
 import android.support.v7.widget.LinearLayoutManager
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import com.android.volley.Response
-import kotlinx.android.synthetic.main.activity_main.mainContainer
 import kotlinx.android.synthetic.main.fragment_search.autoCompleteTextView
+import kotlinx.android.synthetic.main.fragment_search.noResultsFound
+import kotlinx.android.synthetic.main.fragment_search.progressBar
 import kotlinx.android.synthetic.main.fragment_search.searchButton
 import kotlinx.android.synthetic.main.fragment_search.searchResultsRecyclerView
 import org.json.JSONObject
@@ -33,6 +35,7 @@ class SearchFragment : Fragment(),
         searchButton.setOnClickListener({
             val queryText = autoCompleteTextView.text.toString()
             makeApiRequest(queryText)
+            progressBar.visibility = View.VISIBLE
             hideKeyboard(it, context)
             autoCompleteTextView.text.clear()
         })
@@ -50,6 +53,12 @@ class SearchFragment : Fragment(),
         return Response.Listener { response ->
             var searchResults = constructSearchResults(response)
             searchResultsRecyclerView.adapter = SearchResultAdapter(context, searchResults, this)
+            progressBar.visibility = View.GONE
+            if (searchResults.isEmpty()) {
+                noResultsFound.visibility = View.VISIBLE
+            } else {
+                noResultsFound.visibility = View.GONE
+            }
         }
     }
 
@@ -67,8 +76,10 @@ class SearchFragment : Fragment(),
             val title = page?.optString("title")
             val imageUrl = page?.optJSONObject("thumbnail")?.optString("source")
             val description = page?.optJSONObject("terms")?.optJSONArray("description")?.optString(0)
-            var searchResult = SearchResult(imageUrl, description, title, pageId)
-            searchResults.add(searchResult)
+            if (!TextUtils.isEmpty(pageId) && !TextUtils.isEmpty(description) && !TextUtils.isEmpty(title)) {
+                var searchResult = SearchResult(imageUrl, description, title, pageId)
+                searchResults.add(searchResult)
+            }
         }
         return searchResults
     }
@@ -80,7 +91,8 @@ class SearchFragment : Fragment(),
 
     override fun onItemClicked(result: SearchResult, context: Context) {
         val url = "https://en.wikipedia.org/?curid=" + result.pageId
-        val webViewFragment = WikipediaWebview.newInstance("", url)
+        val webViewFragment = WikipediaWebview.newInstance("Collecting more information about " + result.title + "...",
+                url)
         navigateToFragment(webViewFragment, R.id.mainContainer, fragmentManager, true)
     }
 

@@ -6,8 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.webkit.WebViewFragment
+import kotlinx.android.synthetic.main.fragment_web.loadingText
 import kotlinx.android.synthetic.main.fragment_web.webview
+import android.widget.Toast
+
+
 
 class WikipediaWebview : WebViewFragment() {
 
@@ -36,7 +41,16 @@ class WikipediaWebview : WebViewFragment() {
         bundle?.let {
             val loadingMsg = bundle.getString("LOADING_MSG")
             val url = bundle.getString("URL")
-            webview.loadUrl(url)
+            loadingText.visibility = View.VISIBLE
+            loadingText.text = loadingMsg
+            val customWebView = webview
+            customWebView.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    loadingText.visibility = View.GONE
+                }
+            }
+            customWebView.loadUrl(url)
         }
     }
 }
